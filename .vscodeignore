@@ -1,0 +1,13 @@
+.git/**
+.gitignore
+.github/**
+.codebase-memory/**
+.vscode/**
+src/**
+test/**
+node_modules/**
+*.vsix
+esbuild.mjs
+eslint.config.mjs
+tsconfig.json
+package-lock.json

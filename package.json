@@ -1,0 +1,125 @@
+{
+  "name": "just-autocomplete",
+  "displayName": "Just Autocomplete",
+  "description": "Private, local-first inline code completion for OpenAI-compatible models.",
+  "version": "0.1.0",
+  "publisher": "local",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/GeorgijGrigoriev/just-autocomplete.git"
+  },
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Machine Learning"
+  ],
+  "activationEvents": [
+    "onStartupFinished",
+    "onCommand:justAutocomplete.openSettings",
+    "onCommand:justAutocomplete.toggle"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "justAutocomplete.openSettings",
+        "title": "Open Settings",
+        "category": "Just Autocomplete"
+      },
+      {
+        "command": "justAutocomplete.toggle",
+        "title": "Toggle",
+        "category": "Just Autocomplete"
+      }
+    ],
+    "configuration": {
+      "title": "Just Autocomplete",
+      "properties": {
+        "justAutocomplete.baseURL": {
+          "type": "string",
+          "default": "http://localhost:11434/v1",
+          "scope": "machine",
+          "description": "OpenAI-compatible API root. /chat/completions is appended automatically."
+        },
+        "justAutocomplete.model": {
+          "type": "string",
+          "default": "",
+          "scope": "machine",
+          "description": "Model name used for inline completions."
+        },
+        "justAutocomplete.delay": {
+          "type": "number",
+          "default": 400,
+          "minimum": 0,
+          "maximum": 5000,
+          "scope": "machine",
+          "description": "Debounce delay in milliseconds."
+        },
+        "justAutocomplete.timeout": {
+          "type": "number",
+          "default": 20000,
+          "minimum": 1000,
+          "maximum": 120000,
+          "scope": "machine",
+          "description": "Request timeout in milliseconds."
+        },
+        "justAutocomplete.maxTokens": {
+          "type": "number",
+          "default": 128,
+          "minimum": 1,
+          "maximum": 4096,
+          "scope": "machine"
+        },
+        "justAutocomplete.temperature": {
+          "type": "number",
+          "default": 0.2,
+          "minimum": 0,
+          "maximum": 2,
+          "scope": "machine"
+        },
+        "justAutocomplete.prefixChars": {
+          "type": "number",
+          "default": 12000,
+          "minimum": 100,
+          "maximum": 100000,
+          "scope": "machine"
+        },
+        "justAutocomplete.suffixChars": {
+          "type": "number",
+          "default": 4000,
+          "minimum": 0,
+          "maximum": 50000,
+          "scope": "machine"
+        },
+        "justAutocomplete.maxLines": {
+          "type": "number",
+          "default": 20,
+          "minimum": 1,
+          "maximum": 100,
+          "scope": "machine"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "check-types": "tsc --noEmit",
+    "lint": "eslint src test esbuild.mjs",
+    "test": "vitest run",
+    "build": "npm run check-types && node esbuild.mjs",
+    "vscode:prepublish": "npm run build",
+    "package": "npm run build && vsce package --no-dependencies"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/vscode": "^1.90.0",
+    "@vscode/vsce": "^3.2.1",
+    "esbuild": "^0.25.0",
+    "eslint": "^9.17.0",
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.18.0",
+    "vitest": "^3.0.0"
+  }
+}
