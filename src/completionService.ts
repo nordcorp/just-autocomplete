@@ -1,4 +1,4 @@
-import type { CompletionClient } from './client.js';
+import type { CompletionBackend } from './backend.js';
 import { DebouncedRequest } from './debouncedRequest.js';
 import { cleanCompletion } from './response.js';
 import type { CompletionSnapshot, Settings } from './types.js';
@@ -6,7 +6,7 @@ import type { CompletionSnapshot, Settings } from './types.js';
 export class CompletionService {
   private readonly requests = new DebouncedRequest();
 
-  constructor(private readonly client: CompletionClient) {}
+  constructor(private readonly backend: CompletionBackend) {}
 
   async generate(
     snapshot: CompletionSnapshot,
@@ -17,12 +17,12 @@ export class CompletionService {
   ): Promise<string | undefined> {
     const raw = await this.requests.run(
       settings.delay,
-      requestSignal => this.client.complete(snapshot, settings, apiKey, requestSignal),
+      requestSignal => this.backend.complete(snapshot, settings, apiKey, requestSignal),
       signal
     );
     if (!isCurrent()) return undefined;
     const cleaned = cleanCompletion(raw, snapshot.prefix, snapshot.suffix, snapshot.eol, settings.maxLines);
-    return cleaned.length > 0 ? cleaned : undefined;
+    return cleaned.trim().length > 0 ? cleaned : undefined;
   }
 
   cancel(): void {

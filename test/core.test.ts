@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { chatCompletionsURL } from '../src/endpoint.js';
+import { chatCompletionsURL, infillURL } from '../src/endpoint.js';
 import { buildMessages, trimContext } from '../src/prompt.js';
 import { cleanCompletion, limitLines, removeSuffixOverlap, stripFence } from '../src/response.js';
 
@@ -7,6 +7,7 @@ describe('endpoint normalization', () => {
   it('appends chat/completions without duplicate slashes', () => {
     expect(chatCompletionsURL('http://localhost:11434/v1/')).toBe('http://localhost:11434/v1/chat/completions');
     expect(chatCompletionsURL('https://example.test')).toBe('https://example.test/chat/completions');
+    expect(infillURL('http://localhost:8080/')).toBe('http://localhost:8080/infill');
   });
 });
 

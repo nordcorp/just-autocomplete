@@ -1,8 +1,8 @@
 # Just Autocomplete
 
-Just Autocomplete is a deliberately small VS Code extension for inline code completion with a local or self-hosted OpenAI-compatible model. It has no chat, agents, project indexing, code actions, or telemetry.
+Just Autocomplete is a deliberately small VS Code extension for inline code completion with a local or self-hosted OpenAI-compatible or llama.cpp model. It has no chat, agents, project indexing, code actions, or telemetry.
 
-The extension sends only four pieces of information to the configured endpoint: the current language mode, current file name, text immediately before the cursor, and text immediately after the cursor. It never reads other files for a completion.
+The extension sends bounded text immediately before and after the cursor. The OpenAI-compatible backend also includes the current language mode and file name in its prompt; native llama.cpp FIM sends the prefix and suffix as separate fields. It never reads other files for a completion.
 
 ## Install
 
@@ -18,9 +18,11 @@ CLI installation is also available:
 code --install-extension just-autocomplete-0.1.0.vsix
 ```
 
-## Endpoint
+## Backends and endpoints
 
-`Base URL` is the OpenAI-compatible API root, normally ending in `/v1`. The extension appends `/chat/completions` and uses Chat Completions only.
+Choose the backend explicitly in settings. The extension does not probe servers, auto-detect a backend, or fall back between protocols. `Base URL` is backend-dependent: the extension does not add or remove `/v1`.
+
+For **OpenAI-compatible — Chat Completions**, `Base URL` is normally an API root ending in `/v1`; the extension appends `/chat/completions`.
 
 Example for an OpenAI-compatible Ollama endpoint:
 
@@ -29,7 +31,18 @@ Base URL: http://localhost:11434/v1
 Model: qwen2.5-coder:7b
 ```
 
-The model must already be installed and served. Native Ollama `/api/generate` and model-specific FIM templates are not supported in version 0.1.0.
+For **llama.cpp — Native FIM**, use the llama.cpp server root. The extension appends `/infill` and sends the prefix and suffix separately, allowing llama.cpp to select FIM tokens from GGUF metadata. For example:
+
+```sh
+llama-server --fim-qwen-3b-default --port 8080
+```
+
+```text
+Base URL: http://localhost:8080
+Model: <the model or alias exposed by llama-server>
+```
+
+The model/alias entered in settings must match a model available from the server. The model must already be installed and served. Native Ollama `/api/generate` is not supported.
 
 ## Commands and status
 
@@ -45,7 +58,8 @@ All non-secret settings use machine-scoped VS Code configuration and are not syn
 
 | Setting | Default | Purpose |
 | --- | ---: | --- |
-| `justAutocomplete.baseURL` | `http://localhost:11434/v1` | OpenAI-compatible API root |
+| `justAutocomplete.backend` | `openai-compatible` | Explicit backend protocol |
+| `justAutocomplete.baseURL` | `http://localhost:11434/v1` | Backend API root |
 | `justAutocomplete.model` | empty | Required model name |
 | `justAutocomplete.delay` | `400` ms | Delay after the latest edit |
 | `justAutocomplete.timeout` | `20000` ms | HTTP request timeout |
@@ -66,7 +80,7 @@ New typing cancels both the pending debounce timer and active HTTP request. Resu
 - The API key is never written to VS Code configuration.
 - The settings webview uses a restrictive Content Security Policy, per-view nonce, and validated messages.
 
-Your configured server still receives the current filename and bounded cursor context. Review that server's privacy and logging behavior before using sensitive code.
+Your configured server receives bounded cursor context. The OpenAI-compatible backend also sends the current filename and language mode. Review that server's privacy and logging behavior before using sensitive code.
 
 ## Development
 

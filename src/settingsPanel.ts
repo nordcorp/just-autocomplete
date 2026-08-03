@@ -1,6 +1,6 @@
 import { randomBytes } from 'node:crypto';
 import * as vscode from 'vscode';
-import type { CompletionClient } from './client.js';
+import type { CompletionBackend } from './backend.js';
 import { readSettings, saveSettings } from './config.js';
 import { isRecord, validateSettings } from './settingsModel.js';
 import { persistSettings } from './settingsPersistence.js';
@@ -13,7 +13,7 @@ type IncomingMessage =
 export class SettingsPanel {
   private static current: SettingsPanel | undefined;
 
-  static show(context: vscode.ExtensionContext, client: CompletionClient): void {
+  static show(context: vscode.ExtensionContext, backend: CompletionBackend): void {
     if (this.current) {
       this.current.panel.reveal(vscode.ViewColumn.One);
       return;
@@ -24,13 +24,13 @@ export class SettingsPanel {
       vscode.ViewColumn.One,
       { enableScripts: true, retainContextWhenHidden: true }
     );
-    this.current = new SettingsPanel(panel, context, client);
+    this.current = new SettingsPanel(panel, context, backend);
   }
 
   private constructor(
     private readonly panel: vscode.WebviewPanel,
     private readonly context: vscode.ExtensionContext,
-    private readonly client: CompletionClient
+    private readonly backend: CompletionBackend
   ) {
     this.panel.webview.html = renderHtml(this.panel.webview, readSettings());
     this.panel.onDidDispose(() => { SettingsPanel.current = undefined; });
@@ -57,7 +57,7 @@ export class SettingsPanel {
         await this.post({ type: 'result', ok: true, message: 'Settings saved.' });
       } else {
         const stored = await this.context.secrets.get('justAutocomplete.apiKey');
-        const latency = await this.client.testConnection(validation.value, raw.apiKey || stored);
+        const latency = await this.backend.testConnection(validation.value, raw.apiKey || stored);
         await this.post({ type: 'result', ok: true, message: `Connection succeeded in ${latency} ms.` });
       }
     } catch (error) {
@@ -77,7 +77,7 @@ function isIncomingMessage(value: unknown): value is IncomingMessage {
   return value.type === 'test' || typeof value.clearApiKey === 'boolean';
 }
 
-function renderHtml(webview: vscode.Webview, settings: Settings): string {
+export function renderHtml(webview: vscode.Webview, settings: Settings): string {
   const nonce = randomBytes(18).toString('base64');
   const initial = JSON.stringify(settings).replaceAll('<', '\\u003c');
   return `<!doctype html>
@@ -87,14 +87,15 @@ function renderHtml(webview: vscode.Webview, settings: Settings): string {
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'nonce-${nonce}'; script-src 'nonce-${nonce}';">
   <style nonce="${nonce}">
-    body{font-family:var(--vscode-font-family);color:var(--vscode-foreground);background:var(--vscode-editor-background);max-width:760px;margin:32px auto;padding:0 24px}h1{font-size:24px}fieldset{border:1px solid var(--vscode-widget-border);margin:20px 0;padding:18px}legend{padding:0 8px;font-weight:600}.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.wide{grid-column:1/-1}label{display:flex;flex-direction:column;gap:6px}input{box-sizing:border-box;width:100%;padding:7px;border:1px solid var(--vscode-input-border);color:var(--vscode-input-foreground);background:var(--vscode-input-background)}.check{display:flex;flex-direction:row;align-items:center}.check input{width:auto}button{padding:7px 14px;margin-right:8px;border:0;color:var(--vscode-button-foreground);background:var(--vscode-button-background)}button:hover{background:var(--vscode-button-hoverBackground)}#status{margin-top:16px;min-height:20px}.error{color:var(--vscode-errorForeground)}@media(max-width:560px){.grid{grid-template-columns:1fr}}
+    body{font-family:var(--vscode-font-family);color:var(--vscode-foreground);background:var(--vscode-editor-background);max-width:760px;margin:32px auto;padding:0 24px}h1{font-size:24px}fieldset{border:1px solid var(--vscode-widget-border);margin:20px 0;padding:18px}legend{padding:0 8px;font-weight:600}.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.wide{grid-column:1/-1}label{display:flex;flex-direction:column;gap:6px}input,select{box-sizing:border-box;width:100%;padding:7px;border:1px solid var(--vscode-input-border);color:var(--vscode-input-foreground);background:var(--vscode-input-background)}.check{display:flex;flex-direction:row;align-items:center}.check input{width:auto}button{padding:7px 14px;margin-right:8px;border:0;color:var(--vscode-button-foreground);background:var(--vscode-button-background)}button:hover{background:var(--vscode-button-hoverBackground)}#status{margin-top:16px;min-height:20px}.error{color:var(--vscode-errorForeground)}@media(max-width:560px){.grid{grid-template-columns:1fr}}
   </style>
 </head>
 <body>
   <h1>Just Autocomplete</h1>
-  <p>Configure an OpenAI-compatible Chat Completions endpoint. The API key is stored only in VS Code SecretStorage.</p>
+  <p>Configure an OpenAI-compatible Chat Completions or llama.cpp native FIM endpoint. The API key is stored only in VS Code SecretStorage.</p>
   <form id="form">
     <fieldset><legend>Basic</legend><div class="grid">
+      <label class="wide">Backend<select name="backend" required><option value="openai-compatible">OpenAI-compatible — Chat Completions</option><option value="llama-cpp">llama.cpp — Native FIM</option></select></label>
       <label class="wide">Base URL<input name="baseURL" type="url" required></label>
       <label>Model<input name="model" required></label>
       <label>Delay (ms)<input name="delay" type="number" min="0" max="5000" step="1" required></label>
@@ -116,7 +117,9 @@ function renderHtml(webview: vscode.Webview, settings: Settings): string {
     const vscode = acquireVsCodeApi(); const initial = ${initial}; const form = document.getElementById('form'); const status = document.getElementById('status');
     for (const [key,value] of Object.entries(initial)) if (form.elements.namedItem(key)) form.elements.namedItem(key).value = String(value);
     const numbers = ['delay','timeout','maxTokens','temperature','prefixChars','suffixChars','maxLines'];
-    function payload(){const data=Object.fromEntries(new FormData(form));for(const key of numbers)data[key]=Number(data[key]);return {settings:{baseURL:data.baseURL,model:data.model,delay:data.delay,timeout:data.timeout,maxTokens:data.maxTokens,temperature:data.temperature,prefixChars:data.prefixChars,suffixChars:data.suffixChars,maxLines:data.maxLines},apiKey:data.apiKey||'',clearApiKey:form.elements.clearApiKey.checked};}
+    const baseURL = form.elements.baseURL; const backend = form.elements.backend; const placeholders = {'openai-compatible':'http://localhost:11434/v1','llama-cpp':'http://localhost:8080'};
+    function updateBaseURLHint(){baseURL.placeholder=placeholders[backend.value]||'';} backend.addEventListener('change',updateBaseURLHint); updateBaseURLHint();
+    function payload(){const data=Object.fromEntries(new FormData(form));for(const key of numbers)data[key]=Number(data[key]);return {settings:{backend:data.backend,baseURL:data.baseURL,model:data.model,delay:data.delay,timeout:data.timeout,maxTokens:data.maxTokens,temperature:data.temperature,prefixChars:data.prefixChars,suffixChars:data.suffixChars,maxLines:data.maxLines},apiKey:data.apiKey||'',clearApiKey:form.elements.clearApiKey.checked};}
     function send(type){status.textContent='Working…';status.className='';vscode.postMessage({type,...payload()});}
     form.addEventListener('submit',event=>{event.preventDefault();if(form.reportValidity())send('save');}); document.getElementById('test').addEventListener('click',()=>{if(form.reportValidity())send('test');});
     window.addEventListener('message',event=>{const m=event.data;if(!m||m.type!=='result'||typeof m.ok!=='boolean'||typeof m.message!=='string')return;status.textContent=m.message;status.className=m.ok?'':'error';});

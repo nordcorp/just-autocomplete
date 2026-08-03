@@ -1,6 +1,7 @@
 import * as path from 'node:path';
 import * as vscode from 'vscode';
 import type { CompletionService } from './completionService.js';
+import { filterCompletion } from './completionFilter.js';
 import { readSettings } from './config.js';
 import { trimContext } from './prompt.js';
 import type { CompletionStatus } from './statusBar.js';
@@ -19,7 +20,7 @@ export class InlineCompletionProvider implements vscode.InlineCompletionItemProv
   async provideInlineCompletionItems(
     document: vscode.TextDocument,
     position: vscode.Position,
-    _context: vscode.InlineCompletionContext,
+    context: vscode.InlineCompletionContext,
     token: vscode.CancellationToken
   ): Promise<vscode.InlineCompletionList> {
     if (!this.isEnabled() || (document.uri.scheme !== 'file' && document.uri.scheme !== 'untitled')) return { items: [] };
@@ -52,8 +53,12 @@ export class InlineCompletionProvider implements vscode.InlineCompletionItemProv
         controller.signal
       );
       if (generationId === this.generationId) this.status.set('ready', settings.model);
-      if (!completion || generationId !== this.generationId) return { items: [] };
-      return { items: [new vscode.InlineCompletionItem(completion, new vscode.Range(position, position))] };
+      const filtered = completion && filterCompletion(
+        completion,
+        context.triggerKind === vscode.InlineCompletionTriggerKind.Automatic
+      );
+      if (!filtered || generationId !== this.generationId) return { items: [] };
+      return { items: [new vscode.InlineCompletionItem(filtered, new vscode.Range(position, position))] };
     } catch (error) {
       if (isAbort(error) || token.isCancellationRequested) {
         if (generationId === this.generationId) this.status.set('ready', settings.model);
