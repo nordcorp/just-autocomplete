@@ -1,4 +1,7 @@
+export type BackendKind = 'openai-compatible' | 'llama-cpp';
+
 export interface Settings {
+  backend: BackendKind;
   baseURL: string;
   model: string;
   delay: number;

@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { CompletionClient } from './client.js';
+import { BackendRouter } from './backendRouter.js';
 import { CompletionService } from './completionService.js';
 import { isConfigured, readSettings } from './config.js';
 import { InlineCompletionProvider } from './provider.js';
@@ -9,7 +9,7 @@ import { CompletionStatus } from './statusBar.js';
 const enabledKey = 'justAutocomplete.enabled';
 
 export function activate(context: vscode.ExtensionContext): void {
-  const client = new CompletionClient();
+  const backend = new BackendRouter();
   const status = new CompletionStatus();
   let enabled = context.globalState.get(enabledKey, true);
   const updateStatus = (): void => {
@@ -18,17 +18,17 @@ export function activate(context: vscode.ExtensionContext): void {
     else if (!enabled) status.set('disabled', settings.model);
     else status.set('ready', settings.model);
   };
-  const provider = new InlineCompletionProvider(new CompletionService(client), context.secrets, status, () => enabled);
+  const provider = new InlineCompletionProvider(new CompletionService(backend), context.secrets, status, () => enabled);
   const selector: vscode.DocumentSelector = [{ scheme: 'file' }, { scheme: 'untitled' }];
 
   context.subscriptions.push(
     status,
     provider,
     vscode.languages.registerInlineCompletionItemProvider(selector, provider),
-    vscode.commands.registerCommand('justAutocomplete.openSettings', () => SettingsPanel.show(context, client)),
+    vscode.commands.registerCommand('justAutocomplete.openSettings', () => SettingsPanel.show(context, backend)),
     vscode.commands.registerCommand('justAutocomplete.toggle', async () => {
       if (!isConfigured()) {
-        SettingsPanel.show(context, client);
+        SettingsPanel.show(context, backend);
         return;
       }
       enabled = !enabled;

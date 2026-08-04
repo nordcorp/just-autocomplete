@@ -16,11 +16,16 @@ describe('VS Code configuration adapter', () => {
     updates.length = 0;
     const { saveSettings } = await import('../src/config.js');
     await saveSettings({
-      baseURL: 'http://localhost:11434/v1', model: 'm', delay: 400, timeout: 20000,
+      backend: 'openai-compatible', baseURL: 'http://localhost:11434/v1', model: 'm', delay: 400, timeout: 20000,
       maxTokens: 128, temperature: 0.2, prefixChars: 12000, suffixChars: 4000, maxLines: 20
     });
-    expect(updates).toHaveLength(9);
+    expect(updates).toHaveLength(10);
     expect(updates.every(([, , target]) => target === 'global')).toBe(true);
     expect(updates.some(([key]) => key.toLowerCase().includes('apikey'))).toBe(false);
+  });
+
+  it('reads the OpenAI-compatible backend default for old configurations', async () => {
+    const { readSettings } = await import('../src/config.js');
+    expect(readSettings().backend).toBe('openai-compatible');
   });
 });
