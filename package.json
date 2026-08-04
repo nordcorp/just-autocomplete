@@ -7,7 +7,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/GeorgijGrigoriev/just-autocomplete.git"
+    "url": "https://github.com/nordcorp/just-autocomplete.git"
   },
   "engines": {
     "vscode": "^1.90.0"
