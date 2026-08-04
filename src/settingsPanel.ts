@@ -92,10 +92,10 @@ export function renderHtml(webview: vscode.Webview, settings: Settings): string 
 </head>
 <body>
   <h1>Just Autocomplete</h1>
-  <p>Configure an OpenAI-compatible Chat Completions or llama.cpp native FIM endpoint. The API key is stored only in VS Code SecretStorage.</p>
+  <p>Configure an OpenAI-compatible Chat Completions, Ollama Generate, or llama.cpp native FIM endpoint. The API key is stored only in VS Code SecretStorage.</p>
   <form id="form">
     <fieldset><legend>Basic</legend><div class="grid">
-      <label class="wide">Backend<select name="backend" required><option value="openai-compatible">OpenAI-compatible — Chat Completions</option><option value="llama-cpp">llama.cpp — Native FIM</option></select></label>
+      <label class="wide">Backend<select name="backend" required><option value="openai-compatible">OpenAI-compatible — Chat Completions</option><option value="ollama">Ollama — Native Generate</option><option value="llama-cpp">llama.cpp — Native FIM</option></select></label>
       <label class="wide">Base URL<input name="baseURL" type="url" required></label>
       <label>Model<input name="model" required></label>
       <label>Delay (ms)<input name="delay" type="number" min="0" max="5000" step="1" required></label>
@@ -117,7 +117,7 @@ export function renderHtml(webview: vscode.Webview, settings: Settings): string 
     const vscode = acquireVsCodeApi(); const initial = ${initial}; const form = document.getElementById('form'); const status = document.getElementById('status');
     for (const [key,value] of Object.entries(initial)) if (form.elements.namedItem(key)) form.elements.namedItem(key).value = String(value);
     const numbers = ['delay','timeout','maxTokens','temperature','prefixChars','suffixChars','maxLines'];
-    const baseURL = form.elements.baseURL; const backend = form.elements.backend; const placeholders = {'openai-compatible':'http://localhost:11434/v1','llama-cpp':'http://localhost:8080'};
+    const baseURL = form.elements.baseURL; const backend = form.elements.backend; const placeholders = {'openai-compatible':'http://localhost:11434/v1','ollama':'http://localhost:11434/api','llama-cpp':'http://localhost:8080'};
     function updateBaseURLHint(){baseURL.placeholder=placeholders[backend.value]||'';} backend.addEventListener('change',updateBaseURLHint); updateBaseURLHint();
     function payload(){const data=Object.fromEntries(new FormData(form));for(const key of numbers)data[key]=Number(data[key]);return {settings:{backend:data.backend,baseURL:data.baseURL,model:data.model,delay:data.delay,timeout:data.timeout,maxTokens:data.maxTokens,temperature:data.temperature,prefixChars:data.prefixChars,suffixChars:data.suffixChars,maxLines:data.maxLines},apiKey:data.apiKey||'',clearApiKey:form.elements.clearApiKey.checked};}
     function send(type){status.textContent='Working…';status.className='';vscode.postMessage({type,...payload()});}

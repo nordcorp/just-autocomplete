@@ -1,7 +1,7 @@
 {
   "name": "just-autocomplete",
   "displayName": "Just Autocomplete",
-  "description": "Private, local-first inline code completion for OpenAI-compatible and llama.cpp models.",
+  "description": "Private, local-first inline code completion for OpenAI-compatible, Ollama, and llama.cpp models.",
   "version": "0.1.1",
   "publisher": "local",
   "license": "MIT",
@@ -42,10 +42,12 @@
           "type": "string",
           "enum": [
             "openai-compatible",
+            "ollama",
             "llama-cpp"
           ],
           "enumDescriptions": [
             "OpenAI-compatible Chat Completions",
+            "Ollama native Generate",
             "llama.cpp native FIM"
           ],
           "default": "openai-compatible",
@@ -56,7 +58,7 @@
           "type": "string",
           "default": "http://localhost:11434/v1",
           "scope": "machine",
-          "description": "Backend API root. The selected backend endpoint is appended automatically; /v1 is never added or removed."
+          "description": "Backend API root. The selected backend endpoint is appended automatically; /v1 and /api are never added or removed."
         },
         "justAutocomplete.model": {
           "type": "string",

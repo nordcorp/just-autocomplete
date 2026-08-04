@@ -1,4 +1,4 @@
-export type BackendKind = 'openai-compatible' | 'llama-cpp';
+export type BackendKind = 'openai-compatible' | 'llama-cpp' | 'ollama';
 
 export interface Settings {
   backend: BackendKind;

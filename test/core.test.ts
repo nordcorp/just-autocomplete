@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { chatCompletionsURL, infillURL } from '../src/endpoint.js';
+import { chatCompletionsURL, infillURL, ollamaGenerateURL } from '../src/endpoint.js';
 import { buildMessages, trimContext } from '../src/prompt.js';
 import { cleanCompletion, limitLines, removeSuffixOverlap, stripFence } from '../src/response.js';
 
@@ -8,6 +8,7 @@ describe('endpoint normalization', () => {
     expect(chatCompletionsURL('http://localhost:11434/v1/')).toBe('http://localhost:11434/v1/chat/completions');
     expect(chatCompletionsURL('https://example.test')).toBe('https://example.test/chat/completions');
     expect(infillURL('http://localhost:8080/')).toBe('http://localhost:8080/infill');
+    expect(ollamaGenerateURL('http://localhost:11434/api/')).toBe('http://localhost:11434/api/generate');
   });
 });
 

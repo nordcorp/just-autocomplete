@@ -26,8 +26,8 @@ const ranges: Record<Exclude<keyof Settings, 'backend' | 'baseURL' | 'model'>, r
 export function validateSettings(value: unknown): { value?: Settings; errors: string[] } {
   if (!isRecord(value)) return { errors: ['Settings must be an object.'] };
   const errors: string[] = [];
-  const backend = value.backend === 'llama-cpp' ? 'llama-cpp' : DEFAULT_SETTINGS.backend;
-  if (value.backend !== undefined && value.backend !== 'openai-compatible' && value.backend !== 'llama-cpp') {
+  const backend = value.backend === 'llama-cpp' || value.backend === 'ollama' ? value.backend : DEFAULT_SETTINGS.backend;
+  if (value.backend !== undefined && value.backend !== 'openai-compatible' && value.backend !== 'llama-cpp' && value.backend !== 'ollama') {
     errors.push('Backend is invalid.');
   }
   const baseURL = typeof value.baseURL === 'string' ? value.baseURL.trim() : '';
