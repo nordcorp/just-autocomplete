@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { DEFAULT_SETTINGS, validateSettings } from '../src/settingsModel.js';
 
 describe('settings validation', () => {
-  it('accepts valid settings', () => {
-    expect(validateSettings({ ...DEFAULT_SETTINGS, model: 'qwen2.5-coder' }).errors).toEqual([]);
+  it.each(['openai-compatible', 'llama-cpp', 'ollama'] as const)('accepts valid %s settings', backend => {
+    expect(validateSettings({ ...DEFAULT_SETTINGS, backend, model: 'qwen2.5-coder' }).errors).toEqual([]);
   });
 
   it('defaults a missing backend and rejects an unknown backend', () => {

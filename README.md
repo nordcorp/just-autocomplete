@@ -1,8 +1,8 @@
 # Just Autocomplete
 
-Just Autocomplete is a deliberately small VS Code extension for inline code completion with a local or self-hosted OpenAI-compatible or llama.cpp model. It has no chat, agents, project indexing, code actions, or telemetry.
+Just Autocomplete is a deliberately small VS Code extension for inline code completion with a local or self-hosted OpenAI-compatible, Ollama, or llama.cpp model. It has no chat, agents, project indexing, code actions, or telemetry.
 
-The extension sends bounded text immediately before and after the cursor. The OpenAI-compatible backend also includes the current language mode and file name in its prompt; native llama.cpp FIM sends the prefix and suffix as separate fields. It never reads other files for a completion.
+The extension sends bounded text immediately before and after the cursor. The OpenAI-compatible backend also includes the current language mode and file name in its prompt; native Ollama and llama.cpp FIM send the prefix and suffix as separate fields. It never reads other files for a completion.
 
 ## Install
 
@@ -20,7 +20,7 @@ code --install-extension just-autocomplete-0.1.0.vsix
 
 ## Backends and endpoints
 
-Choose the backend explicitly in settings. The extension does not probe servers, auto-detect a backend, or fall back between protocols. `Base URL` is backend-dependent: the extension does not add or remove `/v1`.
+Choose the backend explicitly in settings. The extension does not probe servers, auto-detect a backend, or fall back between protocols. `Base URL` is backend-dependent: the extension does not add or remove `/v1` or `/api`.
 
 For **OpenAI-compatible — Chat Completions**, `Base URL` is normally an API root ending in `/v1`; the extension appends `/chat/completions`.
 
@@ -30,6 +30,15 @@ Example for an OpenAI-compatible Ollama endpoint:
 Base URL: http://localhost:11434/v1
 Model: qwen2.5-coder:7b
 ```
+
+For **Ollama — Native Generate**, use the Ollama API root. The extension appends `/generate` and sends the prefix as `prompt` and the text after the cursor as `suffix` to `/api/generate`:
+
+```text
+Base URL: http://localhost:11434/api
+Model: qwen2.5-coder:7b
+```
+
+The selected Ollama model must support fill-in-the-middle completion. Requests are non-streaming and pass `Max tokens` and `Temperature` as Ollama generation options.
 
 For **llama.cpp — Native FIM**, use the llama.cpp server root. The extension appends `/infill` and sends the prefix and suffix separately, allowing llama.cpp to select FIM tokens from GGUF metadata. For example:
 
@@ -42,7 +51,7 @@ Base URL: http://localhost:8080
 Model: <the model or alias exposed by llama-server>
 ```
 
-The model/alias entered in settings must match a model available from the server. The model must already be installed and served. Native Ollama `/api/generate` is not supported.
+The model/alias entered in settings must match a model available from the server. The model must already be installed and served.
 
 ## Commands and status
 
@@ -58,7 +67,7 @@ All non-secret settings use machine-scoped VS Code configuration and are not syn
 
 | Setting | Default | Purpose |
 | --- | ---: | --- |
-| `justAutocomplete.backend` | `openai-compatible` | Explicit backend protocol |
+| `justAutocomplete.backend` | `openai-compatible` | Explicit backend protocol (`openai-compatible`, `ollama`, or `llama-cpp`) |
 | `justAutocomplete.baseURL` | `http://localhost:11434/v1` | Backend API root |
 | `justAutocomplete.model` | empty | Required model name |
 | `justAutocomplete.delay` | `400` ms | Delay after the latest edit |
@@ -80,7 +89,7 @@ New typing cancels both the pending debounce timer and active HTTP request. Resu
 - The API key is never written to VS Code configuration.
 - The settings webview uses a restrictive Content Security Policy, per-view nonce, and validated messages.
 
-Your configured server receives bounded cursor context. The OpenAI-compatible backend also sends the current filename and language mode. Review that server's privacy and logging behavior before using sensitive code.
+Your configured server receives bounded cursor context. The OpenAI-compatible backend also sends the current filename and language mode; Ollama and llama.cpp receive only the bounded prefix and suffix. Review that server's privacy and logging behavior before using sensitive code.
 
 ## Development
 
