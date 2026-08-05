@@ -6,7 +6,7 @@ The extension sends bounded text immediately before and after the cursor. The Op
 
 ## Install
 
-1. Build or download `just-autocomplete-0.1.0.vsix`.
+1. Build or download `just-autocomplete-<version>.vsix`.
 2. In VS Code, run **Extensions: Install from VSIX...** and choose the file.
 3. Run **Just Autocomplete: Open Settings**.
 4. Enter the model exposed by your server, optionally enter an API key, and choose **Test Connection**.
@@ -15,7 +15,7 @@ The extension sends bounded text immediately before and after the cursor. The Op
 CLI installation is also available:
 
 ```sh
-code --install-extension just-autocomplete-0.1.0.vsix
+code --install-extension just-autocomplete-<version>.vsix
 ```
 
 ## Backends and endpoints

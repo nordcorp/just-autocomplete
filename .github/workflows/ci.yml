@@ -1,0 +1,107 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm test
+
+      - name: Check types
+        run: npm run check-types
+
+  build:
+    name: Build VSIX
+    needs: test
+    runs-on: ubuntu-latest
+    outputs:
+      package_version: ${{ steps.metadata.outputs.package_version }}
+      vsix_name: ${{ steps.metadata.outputs.vsix_name }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Read package metadata
+        id: metadata
+        shell: bash
+        run: |
+          package_version="$(node -p "require('./package.json').version")"
+          echo "package_version=${package_version}" >> "${GITHUB_OUTPUT}"
+          echo "vsix_name=just-autocomplete-${package_version}.vsix" >> "${GITHUB_OUTPUT}"
+
+      - name: Package extension
+        run: npm run package -- --out "${{ steps.metadata.outputs.vsix_name }}"
+
+      - name: Upload VSIX artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: vsix
+          path: ${{ steps.metadata.outputs.vsix_name }}
+          if-no-files-found: error
+          retention-days: 7
+
+  release:
+    name: Publish GitHub Release
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download VSIX artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: vsix
+          path: release-assets
+
+      - name: Validate tag
+        env:
+          PACKAGE_VERSION: ${{ needs.build.outputs.package_version }}
+        run: |
+          if [[ "${GITHUB_REF_NAME}" != "v${PACKAGE_VERSION}" && "${GITHUB_REF_NAME}" != "${PACKAGE_VERSION}" ]]; then
+            echo "Tag ${GITHUB_REF_NAME} does not match package.json version ${PACKAGE_VERSION}."
+            exit 1
+          fi
+
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          VSIX_NAME: ${{ needs.build.outputs.vsix_name }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" "release-assets/${VSIX_NAME}" \
+            --title "Just Autocomplete ${GITHUB_REF_NAME}" \
+            --generate-notes \
+            --verify-tag

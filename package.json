@@ -2,7 +2,7 @@
   "name": "just-autocomplete",
   "displayName": "Just Autocomplete",
   "description": "Private, local-first inline code completion for OpenAI-compatible, Ollama, and llama.cpp models.",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "publisher": "local",
   "license": "MIT",
   "repository": {
